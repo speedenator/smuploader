@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from smuploader import SmugMug
+import argparse
+import sys
+import os
+import mimetypes
+import json
+
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+def settree(atree, path, albumtitle, albumid, sm):
+    """Set the tree path, represented by the list path, to val. Creates nodes if needed"""
+
+    if len(path) == 0:
+        tlist = atree.get("/", [])
+        tlist.append(albumtitle)
+        atree["/"] = tlist
+        # images = sm.get_album_images(albumid)
+        # imagelist = []
+        # for i in images:
+        #     imagelist.append(i["FileName"])
+        # atree[albumtitle] = {"/" : imagelist}
+
+        #        print "appended val, now ", ", ".join(tlist)
+            
+
+    else:
+        nodename = path.popleft()
+#        print "adding values to -", nodename, "-\n"
+
+        if not nodename in atree:
+            atree[nodename] = {}
+        
+        settree(atree[nodename], path, albumtitle, albumid, sm)
+
+
+def printtree(atree, spaces, dirvec):
+    if spaces == 0:
+        print "/:"
+
+    values = atree.get("/", [])
+    lastv  = values.pop()
+
+    for v in sorted(values):
+        print dirvec + "├" + '─' * 2 + " " + v
+
+    if len(atree.keys()) <= 1:
+        print (dirvec + "└" + '─' * 2 + " ") + lastv
+        return
+    else:
+        print (dirvec + "├" + '─' * 2 + " ") + lastv
+    
+    subtrees = atree.copy()
+    del subtrees["/"]
+    ntrees = len(subtrees.keys())
+    key_to_pull = max(subtrees.keys())
+    lasttree = subtrees.pop(key_to_pull)
+
+    dirvec_mid  = dirvec + "│   "
+    dirvec_last = dirvec + "    "
+
+    for k in sorted(subtrees.iterkeys()):
+        print dirvec + "├" + '─' * 2 + " " + k + "/"
+        printtree(subtrees.get(k), spaces + 2, dirvec_mid)
+
+    print dirvec + "└" + '─' * 2 + " " + key_to_pull + "/"
+    printtree(lasttree, spaces + 2, dirvec_last)
+
+            
+
+def main():
+    """List album from SmugMug"""
+
+    parser = argparse.ArgumentParser(description='Upload images to SmugMug.')
+    parser.add_argument('-t', '--template', dest='template', metavar='TEMPLATE_NAME', type=str, help='set album template name')
+    parser.add_argument('-p', '--password', dest='password', metavar='PASSWORD', type=str, help='set album password')
+    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', default=False, help='verbose output')
+    args = parser.parse_args()
+
+
+    sm = SmugMug(verbose = args.verbose)
+    albums = sm.get_albums()
+    atree = {}
+    for a in albums:
+        if args.verbose:
+            print json.dumps(a), "\n";
+
+        path = deque(a["ParentList"])
+        settree(atree, path, a["Title"], a["AlbumKey"], sm)
+
+    if args.verbose:
+        print "top level: ", ", ".join(atree.keys()), "\n"
+        print "2013: ", ", ".join(atree['2013'].keys()), "\n"
+        print "2013: ", ", ".join(atree["2013"]["/"]), "\n"
+        print "-" * 70;
+
+
+    printtree(atree, 0, "")
+    
+
+    
+
+######################################################################
+if __name__ == '__main__':
+    main()
+    
+
+
