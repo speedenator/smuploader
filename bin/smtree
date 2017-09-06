@@ -39,6 +39,12 @@ def settree(atree, path, albumtitle, albumid, sm):
         settree(atree[nodename], path, albumtitle, albumid, sm)
 
 
+def midbar(dirvec, str):
+    return dirvec + "├" + '─' * 2 + " " + str
+
+def endbar(dirvec, str):
+    return dirvec + "└" + '─' * 2 + " " + str
+
 def printtree(atree, spaces, dirvec):
     if spaces == 0:
         print "/:"
@@ -47,13 +53,13 @@ def printtree(atree, spaces, dirvec):
     lastv  = values.pop()
 
     for v in sorted(values):
-        print dirvec + "├" + '─' * 2 + " " + v
+        print midbar(dirvec, v)
 
     if len(atree.keys()) <= 1:
-        print (dirvec + "└" + '─' * 2 + " ") + lastv
+        print endbar(dirvec, lastv)
         return
     else:
-        print (dirvec + "├" + '─' * 2 + " ") + lastv
+        print midbar(dirvec, lastv)
     
     subtrees = atree.copy()
     del subtrees["/"]
@@ -65,10 +71,10 @@ def printtree(atree, spaces, dirvec):
     dirvec_last = dirvec + "    "
 
     for k in sorted(subtrees.iterkeys()):
-        print dirvec + "├" + '─' * 2 + " " + k + "/"
+        print midbar(dirvec, k + "/")
         printtree(subtrees.get(k), spaces + 2, dirvec_mid)
 
-    print dirvec + "└" + '─' * 2 + " " + key_to_pull + "/"
+    print endbar(dirvec, key_to_pull + "/")
     printtree(lasttree, spaces + 2, dirvec_last)
 
             
